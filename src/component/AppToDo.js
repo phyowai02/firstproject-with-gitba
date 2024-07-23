@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from "react";
 import app from "../config/firebase";
-import { getDatabase, push, ref, set, get, remove } from "firebase/database";
+import { getDatabase, push, ref, set, get, remove, onValue } from "firebase/database";
 // import { Toaster } from "react-hot-toast";
 
 function AppToDo() {
 
     const db = getDatabase(app);
     const [inputValue, setInputValue] = useState("");
+    const [todolist, setTodolist] = useState([]);
+    const [prolist, setProlist] = useState([]);
+    const [conlist, setConlist] = useState([]);
     // const [inputValue1, setInputValue1] = useState("");
     // const [inputValue2, setInputValue2] = useState([]);
 
@@ -32,7 +35,6 @@ function AppToDo() {
     //     })
     // }
 
-
     const saveData = async (e) => {
 
         e.preventDefault();
@@ -48,7 +50,9 @@ function AppToDo() {
         set(newDoc, { name: inputValue }).then(() => {
             alert("Successfully added");
             setInputValue("");
-            fetchData();
+            // fetchData();
+            fetchData2();
+
         }).catch((error) => {
             alert("Error: " + error.message);
         });
@@ -66,24 +70,70 @@ function AppToDo() {
     //     }
     // }
 
-    const fetchData = async () => {
-        const dbRef = ref(db, "tasks");
-        const snapshot = await get(dbRef);
-        if (snapshot.exists()) {
-            
+    // const fetchData = async () => {
+    //     const dbRef = ref(db, "tasks");
+    //     const snapshot = await get(dbRef);
+    //     if (snapshot.exists()) {
+    //         const data = snapshot.val();
+    //         setTasks({
+    //             todo: data.todo ? Object.entries(data.todo) : [],
+    //             inProgress: data.inProgress ? Object.entries(data.inProgress) : [],
+    //             completed: data.completed ? Object.entries(data.completed) : []
+    //         });
+    //     } else {
+    //         setTasks({ todo: [], inProgress: [], completed: [] });
+    //     }
+    // };
+
+    const fetchData2 = () => {
+        const dodo1 = ref(db, "tasks/todo");
+        onValue(dodo1, snapshot => {
             const data = snapshot.val();
-            setTasks({
-                todo: data.todo ? Object.entries(data.todo) : [],
-                inProgress: data.inProgress ? Object.entries(data.inProgress) : [],
-                completed: data.completed ? Object.entries(data.completed) : []
-            });
-        } else {
-            setTasks({ todo: [], inProgress: [], completed: [] });
-        }
-    };
+            if(data) {
+                // console.log(data);
+                const temp = Object.keys(data).map(id => ({
+                    ...data[id], dodoid: id
+                }))
+                setTodolist(temp);
+            }
+            else {
+                setTodolist([]);
+            }
+        })
+
+        const dodo2 = ref(db, "tasks/inProgress");
+        onValue(dodo2, snapshot => {
+            const data = snapshot.val();
+            if(data) {
+                const temp = Object.keys(data).map(id => ({
+                    ...data[id], dodoid: id
+                }))
+                setProlist(temp);
+            }
+            else {
+                setProlist([]);
+            }
+        })
+
+        const dodo3 = ref(db, "tasks/completed");
+        onValue(dodo3, snapshot => {
+            const data = snapshot.val();
+            if(data) {
+                const temp = Object.keys(data).map(id => ({
+                    ...data[id], dodoid: id
+                }))
+                setConlist(temp);
+            }
+            else {
+                setConlist([]);
+            }
+        })
+
+
+    }
 
     useEffect(() => {
-        fetchData();
+        fetchData2();
     }, []);
 
     const onDragStart = (e, id, category) => {
@@ -94,6 +144,8 @@ function AppToDo() {
     const onDrop = async (e, newCategory) => {
         const id = e.dataTransfer.getData("id");
         const oldCategory = e.dataTransfer.getData("category");
+        // console.log(oldCategory);
+        // console.log(newCategory);
         if (oldCategory !== newCategory) {
             const taskRef = ref(db, `tasks/${oldCategory}/${id}`);
             const taskSnapshot = await get(taskRef);
@@ -102,11 +154,12 @@ function AppToDo() {
                 await remove(taskRef);
                 const newTaskRef = push(ref(db, `tasks/${newCategory}`));
                 await set(newTaskRef, taskData);
-                fetchData();
+                fetchData2();
             }
         }
     };
 
+    console.log(todolist);
     const onDragOver = (e) => {
         e.preventDefault();
     };
@@ -132,9 +185,9 @@ return (
             <div className="m-20">
                 <h1 className="my-3">To Do List</h1>
                 <div className="border-2 h-96" onDragOver={onDragOver} onDrop={(e) => onDrop(e, "todo")}>
-                    {tasks.todo.map(([id, task]) => (
-                        <div key={id} draggable onDragStart={(e) => onDragStart(e, id, "todo")} className="border-4 p-3 m-3 bg-purple-300">
-                            {task.name}
+                    {todolist.map((item, index) => (
+                        <div key={index} draggable onDragStart={(e) => onDragStart(e, item.dodoid, "todo")} className="border-4 p-3 m-3 bg-purple-300">
+                            {item.name}
                         </div>
                     ))}
             </div>
@@ -142,9 +195,9 @@ return (
         <div className="m-20">
             <h1 className="my-3">In Progress</h1>
             <div className="border-2 h-96" onDragOver={onDragOver} onDrop={(e) => onDrop(e, "inProgress")}>
-                {tasks.inProgress.map(([id, task]) => (
-                    <div key={id} draggable onDragStart={(e) => onDragStart(e, id, "inProgress")} className="border-4 p-3 m-3 bg-yellow-300">
-                        {task.name}
+                {prolist.map((item, index) => (
+                    <div key={index} draggable onDragStart={(e) => onDragStart(e, item.dodoid, "inProgress")} className="border-4 p-3 m-3 bg-yellow-300">
+                        {item.name}
                     </div>
                 ))}
             </div>
@@ -152,9 +205,9 @@ return (
         <div className="m-20">
             <h1 className="my-3">Completed</h1>
             <div className="border-2 h-96" onDragOver={onDragOver} onDrop={(e) => onDrop(e, "completed")}>
-                {tasks.completed.map(([id, task]) => (
-                    <div key={id} draggable onDragStart={(e) => onDragStart(e, id, "completed")} className="border-4 p-3 m-3 bg-green-300">
-                        {task.name}
+                {conlist.map((item, index) => (
+                    <div key={index} draggable onDragStart={(e) => onDragStart(e, item.dodoid, "completed")} className="border-4 p-3 m-3 bg-green-300">
+                        {item.name}
                     </div>
                 ))}
             </div>
