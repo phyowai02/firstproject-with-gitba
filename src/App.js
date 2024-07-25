@@ -4,9 +4,9 @@ import AppToDo from "./component/AppToDo"
 
 function App() {
   return(
-    <>
+    <div>
       <AppToDo />
-    </> 
+    </div> 
   )
 }
 
