@@ -187,28 +187,35 @@ function AppToDo() {
     const handleUpdateClick = (source,item,id) => {
         setSource(source);
         setInputValue1(item);
-        setUpdateId(id); 
+        setUpdateId(id);
     }
 
     const updateData = async (e) => {
         e.preventDefault();
-        if(!update) {
-            alert("No input selected for update");
+    
+        // Check if the input value is empty
+        if (inputValue1.trim() === '') {
+            alert("Input cannot be empty");
+            return;
         }
-        console.log(source); 
-        const dbRef = ref(db, `tasks/${source}/${updateId}`);
-        await update(dbRef, { name: inputValue1 })
-            .then(() => {
-                alert("Task successfully updated");
-                setInputValue1("");
-                setUpdateId(null);
-                fetchData2();
-            })
-            .catch((error) => {
-                alert("Error updating task: " + error.message);
-            });
-        
-    }
+    
+        // Check if there is an update ID
+        if (!updateId) {
+            alert("No input selected for update");
+            return;
+        }
+    
+        try {
+            const dbRef = ref(db, `tasks/${source}/${updateId}`);
+            await update(dbRef, { name: inputValue1 });
+            alert("Task successfully updated");
+            setInputValue1("");
+            setUpdateId(null);
+            fetchData2();
+        } catch (error) {
+            alert("Error updating task: " + error.message);
+        }
+    };
 
 return (
     <div className="cursor-grab">
